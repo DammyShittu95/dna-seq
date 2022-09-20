@@ -1,6 +1,7 @@
 ##Command Line Applications for NGS
+#Analysis of Illumina reads and ENSEMBL data involves QC assessment, filtering, mapping, variant calling and data visualisation.
 
-source /Users/ishittu/opt/miniconda3/bin/activate
+source /Users/<username>/opt/miniconda3/bin/activate
 conda --version # check
 
 ## Move & download data    
@@ -12,7 +13,6 @@ ls
 
 # or use scp <file to move> <new location>
 scp species_EnsemblBacteria.txt #<[user@IP_address_login_credentials]AWS instance>
-
 
 
 ## Organise and search files
@@ -54,7 +54,6 @@ nano scripts/new_projects.sh
 
 
 # script for bad reads
-
 nano scripts/bad_reads.sh
 #!/bin/bash
 for f in *.fastq; do \
@@ -77,19 +76,13 @@ chmod +x bad_reads_script.sh # adds executable permission
 
 
 
-
-
-
-
-
 ## FastQC quality assessment
 ls -l -h
 conda install -c bioconda/label/cf201901 fastqc | fastqc -help
 conda install -c bioconda seqkit #fasta/q file manipulation package
 
 
-# create script
-
+# create fastQC script
 nano scripts/fastQC.sh
 #!/bin/bash
 
@@ -109,8 +102,6 @@ chmod +x fastqc/fastqc_untrimmed/* # make all files executable
 ls -l fastqc/fastqc_untrimmed/
 
 cat fastqc/fastqc_untrimmed/*_fastqc/summary.txt > fastqc/fastqc_untrimmed/all_fastqc_summaries.txt # concatenates all summary files
-#q quit viewer, end script
-
 
 ls -l scripts/fastQC.sh
 chmod +x scripts/fastQC.sh
@@ -119,7 +110,6 @@ chmod +x scripts/fastQC.sh
 open fastqc/fastqc_untrimmed/*.html # opens QC results
 less fastqc/fastqc_untrimmed/all_fastqc_summaries.txt # preview; 'q' to exit
 grep FAIL fastqc/fastqc_untrimmed/all_fastqc_summaries.txt # searches for failed tests
-
 
 
 
@@ -135,12 +125,10 @@ conda install -c bioconda/label/cf201901 trimmomatic | trimmomatic help
 mkdir adapters/ | cp -R /Users/<username>/opt/miniconda3/pkgs/trimmomatic-0.38-1/share/trimmomatic-0.38-1/adapters/ ./adapters
 
 
-
 # create script to trim and re-run fastQC to observe qual scores (esp. per base)
                               # selected adapters dependent on sample library prep
 nano scripts/fastQC_trim.sh
 #!/bin/bash
-
 for f in */*.fastq; do \
 name=$(basename ${f} .fastq); \ #re-define variable
 trimmomatic SE -threads 4 -phred33 project_$name/data/$f project_$name/data/$name\_trim.fastq ILLUMINACLIP:adapters/TruSeq3-SE.fa:2:40:15 SLIDINGWINDOW:4:0 MINLEN:25; \
@@ -179,22 +167,16 @@ curl -L -o project_$name/data/ecoli_rel606.fasta.gz ftp://ftp.ncbi.nlm.nih.gov/g
 mkdir -pv project_$name/results/{sam,\bam,\bcf,\vcf,\igv_files}; done
 
 
-
-
 # make script align_variant_calling
 
 nano scripts/align_variant_calling.sh
 #!/bin/bash
-
 for gz in */data/*.gz; do \
 echo "Decompressing $gz files..."; \
   for f in */data/*_trim.fastq; do name=$(basename ${f} _trim.fastq); \  #re-define variable
 ref=$(basename ${gz} .gz); \
 gunzip -c ${gz} > project_$name/data/${ref}; \
  done 
-
-
-
 
 
 mv project_$name/data/ecoli_rel606.fasta project_$name/data/ref_ecoli_rel606.fasta #rename reference genome
@@ -204,14 +186,14 @@ tar xvf data/trimmed_fastq.sub.tar.gz -C data/ #untar/ decompress trimmed data
   
   #---OR TRIM USING TRIMMOATIC!!---
   
-  trimmomatic #check
+trimmomatic #check
 
 seqkit stats data/*f{asta,astq} # observes summary about fasta and fastq files
 
 for R1 in data/*_1.fastq; do \
 R2=${R1%_1.fastq}_2.fastq; \    # '%' is a modula; remainder when a is divided by b (a%b); creates new variable by replacing old variable - newvariablename=${oldvariablename//oldtext/newtext}
   trimmomatic PE -threads 4 -phred33 $R1 $R2 "${R1%.*}_trim_paired.fastq.gz" "${R1%.*}_trim_unpaired.fastq.gz" "${R2%.*}_trim_paired.fastq.gz" "${R2%.*}_trim_unpaired.fastq.gz" \  # creates two files of paired and unpaired trim data for each paired-end
-  ILLUMINACLIP:"/Users/ishittu/opt/miniconda3/pkgs/trimmomatic-0.39-hdfd78af_2/share/trimmomatic-0.39-2/adapters/TruSeq3-PE.fa":2:40:15 MINLEN:25; \  #select adapter
+  ILLUMINACLIP:"/Users/<username>/opt/miniconda3/pkgs/trimmomatic-0.39-hdfd78af_2/share/trimmomatic-0.39-2/adapters/TruSeq3-PE.fa":2:40:15 MINLEN:25; \  #select adapter
       echo "Finished trimming $R1 $R2 file(s)."; \
 done
 
@@ -231,7 +213,6 @@ bwa index data/ref_ecoli_rel606.fasta #creates faidx/ baidx ext. files
   echo $trim2 #check
   echo $trim_name #check
   
-  
   conda install -c bioconda/label/cf201901 samtools
   conda install -c bioconda/label/cf201901 bcftools
   
@@ -250,9 +231,9 @@ bwa index data/ref_ecoli_rel606.fasta #creates faidx/ baidx ext. files
   # then sort bam by coordinates;   can also be sorted by chr., coordinates, read name etc.
   for samfile in *.sam; do \
   samplename=$(basename ${samfile} _trim_paired_aligned.sam); \   #create new variable from old one by removing suffix from sam file using basename function
-  samtools view -bh $samfile > "/Users/ishittu/Library/CloudStorage/OneDrive-ImperialCollegeLondon/ImperialBits/PROJECTS (1)/BioInformatics/Command Line/alignment_variant_calling/ecoli_exp/results/bam/${samplename}.bam"; \  # -h flag includes header in bam
+  samtools view -bh $samfile > "/Users/<username>/Library/CloudStorage/OneDrive-ImperialCollegeLondon/ImperialBits/PROJECTS (1)/BioInformatics/Command Line/alignment_variant_calling/ecoli_exp/results/bam/${samplename}.bam"; \  # -h flag includes header in bam
   cd ..; \
-  samtools sort -o "/Users/ishittu/Library/CloudStorage/OneDrive-ImperialCollegeLondon/ImperialBits/PROJECTS (1)/BioInformatics/Command Line/alignment_variant_calling/ecoli_exp/results/bam/${samplename}.sorted.bam" "/Users/ishittu/Library/CloudStorage/OneDrive-ImperialCollegeLondon/ImperialBits/PROJECTS (1)/BioInformatics/Command Line/alignment_variant_calling/ecoli_exp/results/bam/${samplename}.bam"; \
+  samtools sort -o "/Users/<username>/Library/CloudStorage/OneDrive-ImperialCollegeLondon/ImperialBits/PROJECTS (1)/BioInformatics/Command Line/alignment_variant_calling/ecoli_exp/results/bam/${samplename}.sorted.bam" "/Users/ishittu/Library/CloudStorage/OneDrive-ImperialCollegeLondon/ImperialBits/PROJECTS (1)/BioInformatics/Command Line/alignment_variant_calling/ecoli_exp/results/bam/${samplename}.bam"; \
   done
   
   cd ..
@@ -260,21 +241,9 @@ bwa index data/ref_ecoli_rel606.fasta #creates faidx/ baidx ext. files
   
   # observe info about bam file
   samtools flagstat bam/${samplename}.sorted.bam # flagstat counts the number of alignments for each FLAG type
-  # [2] : array of 2 elements storing no of reads and no of 'QC-failed reads'.
-  # 'NAN' : 'Not A Number' (e.g: div by 0)
-  # n_reads are the total number of reads
-  # n_pair_all : the read is paired in sequencing, no matter whether it is mapped in a pair
-  # n_pair_good : the read is mapped in a proper pair
-  # n_read1 : count read1
-  # n_read2 : count read2 - should match/be similar to read1
-  # n_properly: paired read pairs map to the same chromosome, oriented towards each other, and with a sensible insert size - should be high; improper pairing may be due to read files being out of order
-  # n_sgltn : the read itself is unmapped the mate is mapped
-  # n_pair_map : the read itself is mapped the mate is unmapped
-  # n_diffchr : number of reads with a mate mapped on a different chromosome
-  # n_diffhigh : number of reads with a mate on a different chromosome having a quality greater than 5
   
   
-  # variant call by;
+  # Variant call by;
   # first calculating read coverage of genomic positions 
       # mpileup - uses mapping scores to evaluate variant calling and create genotype likelihoods (used to be samtools mpileup)
   cd ..
@@ -287,28 +256,8 @@ bwa index data/ref_ecoli_rel606.fasta #creates faidx/ baidx ext. files
   
   
   # detect SNVs (single nt variants) using call command and converting bcf compressed file to vcf 
-      # specify --ploidy (E.coli is haploid, 1);
-      # -m allows for multiallelic and rare-variant calling;
-      # -v outputs variant sites only
   bcftools call --ploidy 1 -m -v -o results/vcf/$samplename\_variants.vcf results/bcf/$samplename\_raw.bcf
-  
-  
-  # filter and report SNVs in a VCF (variant calling format - stores variation data) using vcfutils
-  # varFilter - filters short variants (*)
-  # CHROM	- contig location where the variation occurs
-  # POS	- position within the contig where the variation starts
-  # ID - identifier; a . until we add annotation information
-  # REF	- reference genotype (forward strand) or nt. A,C,G,T
-  # ALT	- sample allele/ genotype (forward strand) or nt.
-  # QUAL - quality Phred-scaled probability that the observed variant exists at this site (higher is better); out of 100
-  # FILTER - a . if no quality filters have been applied, PASS if a filter is passed, or the name of the filters this variant failed
-  # INFO - further information on variants
-  # FORMAT - lists in order the metrics presented in the final column, ie GT tells us to expect genotypes in following columns
-  # NA19909 - Individual identifier (optional); previous column tells us to expect to see genotypes
-  # genotypes in the form 0|1 --> 0 = ref. allele   &  1 = alt. allele therefore = heterozygous;
-  # vertical pipe '|' = genotype is phased, and the chr. the alleles are on is known; 
-  # slash '/' = we don’t know the chr. they are on
-  
+   
   # results	- lists the values associated with those metrics in order
   vcfutils.pl varFilter results/vcf/$samplename\_variants.vcf > results/vcf/$samplename\_final_variants.vcf
   vcfutils.pl varFilter -p results/vcf/$samplename\_variants.vcf > results/vcf/$samplename\_final_variants.vcf # -p flags prints filtered variants
